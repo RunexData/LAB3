@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,7 +59,8 @@ uint8_t led =0;
 uint16_t time, playt, stimer;
 uint8_t result[1];
 uint16_t rawresult;
-
+uint8_t RxBuffer[6];
+uint8_t TxBuffer[6];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,6 +74,8 @@ void Start();
 void Play();
 void EEPROMWriteExample();
 void EEPROMReadExample(uint8_t *Rdata, uint16_t len);
+void Recieve();
+void Transmmit();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -120,8 +125,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  EEPROMWriteExample();
-	  EEPROMReadExample(Times, 1);
+	  Transmmit();
+	  Recieve();
+
 	  Start();
 	  Play();
 
@@ -239,7 +245,7 @@ static void MX_LPUART1_UART_Init(void)
 
   /* USER CODE END LPUART1_Init 1 */
   hlpuart1.Instance = LPUART1;
-  hlpuart1.Init.BaudRate = 115200;
+  hlpuart1.Init.BaudRate = 57600;
   hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
   hlpuart1.Init.StopBits = UART_STOPBITS_1;
   hlpuart1.Init.Parity = UART_PARITY_NONE;
@@ -352,7 +358,7 @@ void Start()
 	 {
 		 time = rand() % (8000 - 3000 + 1) + 3000;
 		 start = 0;
-		 HAL_Delay(time + 1);
+		 HAL_Delay(time);
 		 led = 1;
 		 stimer = HAL_GetTick();
 	 }
@@ -376,8 +382,37 @@ void Play()
 			eepromExampleWriteFlag = 1;
 			EEPROMWriteExample();
 			play = 0;
+			stimer = 0;
+			led = 0;
 		}
 	}
+}
+
+void Recieve()
+{
+	HAL_UART_Receive(&hlpuart1, RxBuffer, 6, 10000);
+	if(RxBuffer[0] == 'a')
+	{
+		start = RxBuffer[1];
+	}
+	if(RxBuffer[3] == 'b')
+	{
+		play = RxBuffer[4];
+	}
+
+}
+
+void Transmmit()
+{
+	eepromExampleReadFlag = 1;
+	EEPROMReadExample(Times, 1);
+	TxBuffer[0] = 'a';
+	TxBuffer[1] = led;
+	TxBuffer[2] = '\n';
+	TxBuffer[3] = 'b';
+	TxBuffer[4] = Times[0];
+	TxBuffer[5] = '\n';
+ 	HAL_UART_Transmit(&hlpuart1, TxBuffer, 6, 5000);
 }
 
 /* USER CODE END 4 */
