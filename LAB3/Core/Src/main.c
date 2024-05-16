@@ -54,7 +54,9 @@ uint8_t data[1] = {0xff};
 uint8_t start = 0;
 uint8_t play = 0;
 uint8_t led =0;
-uint16_t time, playt, result, stimer;
+uint16_t time, playt, stimer;
+uint8_t result[1];
+uint16_t rawresult;
 
 /* USER CODE END PV */
 
@@ -67,6 +69,8 @@ static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 void Start();
 void Play();
+void EEPROMWriteExample();
+void EEPROMReadExample(uint8_t *Rdata, uint16_t len);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -116,7 +120,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//	 EEPROMWriteExample();
+	  EEPROMWriteExample();
 	  EEPROMReadExample(Times, 1);
 	  Start();
 	  Play();
@@ -330,16 +334,14 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void EEPROMWriteExample() {
 	if (eepromExampleWriteFlag && hi2c2.State == HAL_I2C_STATE_READY) {
-		HAL_I2C_Mem_Write_IT(&hi2c2, EEPROM_ADDR, 0x2C, I2C_MEMADD_SIZE_16BIT,
-				data, 1);
+		HAL_I2C_Mem_Write_IT(&hi2c2, EEPROM_ADDR, 0x2C, I2C_MEMADD_SIZE_16BIT, result, 1);
 		eepromExampleWriteFlag = 0;
 	}
 }
 
 void EEPROMReadExample(uint8_t *Rdata, uint16_t len) {
 	if (eepromExampleReadFlag && hi2c2.State == HAL_I2C_STATE_READY) {
-		HAL_I2C_Mem_Read_IT(&hi2c2, EEPROM_ADDR, 0x2c, I2C_MEMADD_SIZE_16BIT,
-				Rdata, len);
+		HAL_I2C_Mem_Read_IT(&hi2c2, EEPROM_ADDR, 0x2c, I2C_MEMADD_SIZE_16BIT,Rdata, len);
 		eepromExampleReadFlag = 0;
 	}
 }
@@ -362,7 +364,17 @@ void Play()
 	if(led == 1)
 	{
 		if(play){
-			result = HAL_GetTick() - stimer ;
+			rawresult = HAL_GetTick() - stimer ;
+			if(rawresult > 1000)
+			{
+				result[0] = 100;
+			}
+			else
+			{
+				result[0] = rawresult / 10;
+			}
+			eepromExampleWriteFlag = 1;
+			EEPROMWriteExample();
 			play = 0;
 		}
 	}
